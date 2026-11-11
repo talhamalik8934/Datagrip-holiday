@@ -80,6 +80,13 @@ while (running)
         await service.UpdateGuestCount(updateBookingId, newGuestCount);
         break;
 
+        case "5":
+        Console.WriteLine("\n--- Cancel Booking ---");
+        Console.Write("Enter Booking ID: ");
+        int deleteBookingId = int.Parse(Console.ReadLine()!);
+
+        await service.CancelBooking(deleteBookingId);
+        break;
 
         case "0":
             running = false;

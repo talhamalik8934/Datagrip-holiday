@@ -156,6 +156,25 @@ public class HolidayMakerService
     }
     }
 
+    public async Task CancelBooking(int bookingId)
+    {
+        using var conn = await Database.GetConnectionAsync();
 
+        string deleteSql = @"DELETE FROM bookings WHERE id = @bookingId;";
+
+        await using var cmd = new MySqlCommand(deleteSql, conn);
+        cmd.Parameters.AddWithValue("@bookingId", bookingId);
+
+        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+        if (rowsAffected > 0)
+        {
+        Console.WriteLine($"\n Booking id: {bookingId} has been successfully canceled.");
+        }
+        else
+        {
+        Console.WriteLine($"\n Booking id: {bookingId} not found.");
+        }
+    }
 
 }
