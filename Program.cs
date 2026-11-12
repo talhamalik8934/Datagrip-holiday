@@ -4,6 +4,8 @@ await using var testConn = await Database.GetConnectionAsync();
 Console.WriteLine("Database Connected!");
 
 HolidayMakerService service = new HolidayMakerService();
+var customerService = new CustomerService();
+int? selectedCustomerId = null;
 bool running = true;
 
 while (running)
@@ -14,10 +16,11 @@ while (running)
     Console.WriteLine("3. View customer bookings");
     Console.WriteLine("4. Change number of guests in booking");
     Console.WriteLine("5. Cancel a booking");
+    Console.WriteLine("6. Customer management");
     Console.WriteLine("0. Exit");
-    Console.Write("\nSelect an option (0-5): ");
+    Console.Write("\nSelect an option (0-6): ");
 
-    string input = Console.ReadLine() ?? "";
+    string input = Console.ReadLine()!;
 
     switch (input)
     {
@@ -62,7 +65,7 @@ while (running)
 
         case "3":
 
-        Console.WriteLine("\n--- CREATE A BOOKING ---");
+        Console.WriteLine("\n--- View Bookings ---");
         Console.WriteLine("Enter customer id: ");
         int customerid=int.Parse(Console.ReadLine()!);
 
@@ -88,6 +91,54 @@ while (running)
         await service.CancelBooking(deleteBookingId);
         break;
 
+        case "6":
+        Console.WriteLine("\n--- CUSTOMER MANAGEMENT ---");
+        Console.WriteLine("1. Register New Customer");
+        Console.WriteLine("2. Select Existing Customer");
+        Console.Write("Choose option: ");
+        string subChoice = Console.ReadLine() ?? "";
+
+        if (subChoice == "1")
+        {
+            Console.Write("Enter Name: ");
+            string? name = Console.ReadLine();
+
+            Console.Write("Enter Email: ");
+            string? email = Console.ReadLine();
+
+            Console.Write("Enter Phone Number: ");
+            string? phone = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone))
+            {
+            Console.WriteLine("Name, email, and phone number cannot be empty.");
+            }
+            else
+            {
+            selectedCustomerId = await customerService.RegisterCustomer(name, email, phone);
+            }
+
+        }
+        else if (subChoice == "2")
+        {
+            await customerService.ListCustomers();
+            Console.Write("\nEnter Customer ID to select: ");
+            if (int.TryParse(Console.ReadLine(), out int chosenId))
+            {
+            if (await customerService.CustomerExists(chosenId))
+            {
+                selectedCustomerId = chosenId;
+                Console.WriteLine($"Active customer set to ID: {selectedCustomerId}");
+            }
+            else
+            {
+                Console.WriteLine($"Customer ID {chosenId} does not exist,\n");
+            }
+            }
+        }
+        break;
+
+        
         case "0":
             running = false;
             Console.WriteLine("BYE");
