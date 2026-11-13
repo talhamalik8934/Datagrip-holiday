@@ -4,7 +4,7 @@ namespace HolidayMaker;
 
 public class CustomerService
 {
-    // Register new customer and return generated ID
+    // Register new customer and return generated ID.
     public async Task<int> RegisterCustomer(string name, string email, string phoneNumber)
     {
         using var conn = await Database.GetConnectionAsync();
@@ -25,7 +25,7 @@ public class CustomerService
         return newCustomerId;
     }
 
-    // Show all existing customers
+    // This method is used to list all existing customers in the database.
     public async Task ListCustomers()
     {
         using var conn = await Database.GetConnectionAsync();
@@ -50,7 +50,7 @@ public class CustomerService
 
     }
 
-    // Verify if an entered Customer ID actually exists before selecting
+    // Verify if an entered Customer ID actually exists before selecting.
     public async Task<bool> CustomerExists(int customerId)
     {
         using var conn = await Database.GetConnectionAsync();

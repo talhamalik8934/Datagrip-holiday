@@ -4,7 +4,8 @@ namespace HolidayMaker;
 
 public class HolidayMakerService
 {
-    // Method for the first Query: Search Rooms.
+    // Method for the first Query = Search Rooms.
+    // It is used to search available rooms with optional filters and sorting.
     public async Task SearchAvailableRooms(string city, int guests, string checkIn, string checkOut,bool? requirePool = null,
     bool? requireRestaurant = null,
     int? maxBeachDistance = null,
@@ -13,7 +14,7 @@ public class HolidayMakerService
     {
         await using var conn= await Database.GetConnectionAsync();
         
-
+        // Base query using the view and excluding rooms with overlapping bookings.
         string sql= @"
         SELECT hotel_name, city, room_id, room_number, capacity, price_per_night, rating
         FROM v_available_room
@@ -90,42 +91,8 @@ public class HolidayMakerService
 
     }
 
-    public async Task CreateBooking(int customer_id, int room_id, string checkIn_d, string checkOut_d, int _guests)
-    {
-        using var conn= await Database.GetConnectionAsync();
-
-        string priceSql=@"SELECT price_per_night FROM rooms WHERE id=@room_id;"; 
-        await using var priceCmd= new MySqlCommand(priceSql,conn);
-        priceCmd.Parameters.AddWithValue("@room_id",room_id);
-        object? result= await priceCmd.ExecuteScalarAsync();
-
-        if(result==null)
-        {
-            Console.WriteLine("Invalid room id!!");
-            return;
-        }
-
-        decimal pricePerNight= Convert.ToDecimal(result);
-        int nights= ((DateTime.Parse(checkOut_d))-(DateTime.Parse(checkIn_d))).Days;
-        Decimal totalPrice= nights*pricePerNight;
-
-        string insertSql=@"
-        INSERT INTO bookings (customer_id, room_id, check_in, check_out, amount_guests, total_price)
-        VALUES (@customer_id, @room_id, @checkIn_d, @checkOut_d, @_guests, @total_price);";
-        
-        await using var insertCmd = new MySqlCommand(insertSql,conn);
-        insertCmd.Parameters.AddWithValue("@customer_id", customer_id);
-        insertCmd.Parameters.AddWithValue("@room_id", room_id);
-        insertCmd.Parameters.AddWithValue("@checkIn_d", checkIn_d);
-        insertCmd.Parameters.AddWithValue("@checkOut_d", checkOut_d);
-        insertCmd.Parameters.AddWithValue("@_guests", _guests);
-        insertCmd.Parameters.AddWithValue("@total_price", totalPrice);
-
-        await insertCmd.ExecuteNonQueryAsync();
-        Console.WriteLine($"Booking created!! Nights: {nights} || Total price: {totalPrice} SEK");
-
-    }
-
+    
+    // This method is used to show all bookings for a specific customer.
     public async Task ViewBooking(int customer_id_b)
     {
         await using var conn= await Database.GetConnectionAsync();
@@ -167,51 +134,5 @@ public class HolidayMakerService
 
     }
 
-    public async Task UpdateGuestCount(int bookingId, int newGuests)
-    {
-        await using var conn= await Database.GetConnectionAsync();
-        
-        string updateSql=@"
-        UPDATE bookings
-        SET amount_guests = @newGuests
-        WHERE id = @bookingId
-        AND @newGuests <= (SELECT capacity FROM rooms WHERE id = room_id);";
-
-        await using var cmd = new MySqlCommand(updateSql, conn);
-        cmd.Parameters.AddWithValue("@newGuests", newGuests);
-        cmd.Parameters.AddWithValue("@bookingId", bookingId);
-
-        int affectedrow= await cmd.ExecuteNonQueryAsync();
-
-        if (affectedrow > 0)
-    {
-        Console.WriteLine($"Booking id: {bookingId} updated successfully! New guest count: {newGuests}");
-    }
-    else
-    {
-        Console.WriteLine($"Update failed. Booking id: {bookingId} doesn't exist, or room capacity is too small");
-    }
-    }
-
-    public async Task CancelBooking(int bookingId)
-    {
-        using var conn = await Database.GetConnectionAsync();
-
-        string deleteSql = @"DELETE FROM bookings WHERE id = @bookingId;";
-
-        await using var cmd = new MySqlCommand(deleteSql, conn);
-        cmd.Parameters.AddWithValue("@bookingId", bookingId);
-
-        int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-        if (rowsAffected > 0)
-        {
-        Console.WriteLine($"\n Booking id: {bookingId} has been successfully canceled.");
-        }
-        else
-        {
-        Console.WriteLine($"\n Booking id: {bookingId} not found.");
-        }
-    }
 
 }

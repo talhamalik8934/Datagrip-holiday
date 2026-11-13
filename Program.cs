@@ -1,13 +1,17 @@
 ﻿using HolidayMaker;
 
+// Test database connection at startup.
 await using var testConn = await Database.GetConnectionAsync();
 Console.WriteLine("Database Connected!");
 
 HolidayMakerService service = new HolidayMakerService();
+var createBooking_= new CreateBooking();
 var customerService = new CustomerService();
+var ud_booking= new updateDelete();
 int? selectedCustomerId = null;
 bool running = true;
 
+// Main menu loop for the Holiday Maker menu.
 while (running)
 {
     try
@@ -41,12 +45,14 @@ while (running)
         Console.Write("Enter checkout date (YYYY-MM-DD): ");
         string checkOut = Console.ReadLine()!;
 
+        // Check that dates are valid and check-out is after check-in.
         if (!DateTime.TryParse(checkIn, out DateTime d1) || !DateTime.TryParse(checkOut, out DateTime d2) || d2 <= d1)
         {
             Console.WriteLine("Invalid dates! Check-out must be after check-in (YYYY-MM-DD).");
             break;
         }
 
+        // Optional search filters (press Enter to skip).
         Console.Write("Require Pool? (y/n, Enter to skip): ");
         bool? requirePool = Console.ReadLine()?.ToLower() == "y" ? true : null;
 
@@ -67,10 +73,20 @@ while (running)
         break;
 
         case "2":
+
         Console.WriteLine("\n--- CREATE A BOOKING ---");
 
-        Console.Write("Enter Customer ID: ");
-        int cId = int.Parse(Console.ReadLine()!);
+        // Use the active customer if already selected, otherwise ask for ID.
+        int cId = selectedCustomerId ?? 0;
+        if (cId == 0)
+        {
+            Console.Write("Enter Customer ID: ");
+            cId = int.Parse(Console.ReadLine()!);
+        }
+        else
+        {
+        Console.WriteLine($"Using selected Customer ID: {cId}");
+        }
 
         Console.Write("Enter Room ID: ");
         int rId = int.Parse(Console.ReadLine()!);
@@ -90,15 +106,22 @@ while (running)
         Console.Write("Enter Number of Guests: ");
         int gCount = int.Parse(Console.ReadLine()!);
 
-        await service.CreateBooking(cId, rId, cIn, cOut, gCount);
+        await createBooking_.CBooking(cId, rId, cIn, cOut, gCount);
         break;
 
         case "3":
 
         Console.WriteLine("\n--- View Bookings ---");
-        Console.WriteLine("Enter customer id: ");
-        int customerid=int.Parse(Console.ReadLine()!);
-
+        int customerid = selectedCustomerId ?? 0;
+        if (customerid == 0)
+        {
+            Console.Write("Enter Customer ID: ");
+            customerid = int.Parse(Console.ReadLine()!);
+        }
+        else
+        {
+            Console.WriteLine($"Using selected Customer ID: {customerid}");
+        }
         await service.ViewBooking(customerid);
         break;
 
@@ -110,7 +133,7 @@ while (running)
         Console.Write("Enter New Number of Guests: ");
         int newGuestCount = int.Parse(Console.ReadLine()!);
 
-        await service.UpdateGuestCount(updateBookingId, newGuestCount);
+        await ud_booking.UpdateGuestCount(updateBookingId, newGuestCount);
         break;
 
         case "5":
@@ -118,7 +141,7 @@ while (running)
         Console.Write("Enter Booking ID: ");
         int deleteBookingId = int.Parse(Console.ReadLine()!);
 
-        await service.CancelBooking(deleteBookingId);
+        await ud_booking.CancelBooking(deleteBookingId);
         break;
 
         case "6":
@@ -177,6 +200,7 @@ while (running)
             break;
     }
     }
+    // Prevent crash if user enters letters instead of numbers.
     catch (FormatException)
     {
         Console.WriteLine("Invalid input format! Please enter valid numbers and dates (YYYY-MM-DD).");
