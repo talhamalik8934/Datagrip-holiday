@@ -10,6 +10,8 @@ bool running = true;
 
 while (running)
 {
+    try
+    {
     Console.WriteLine("\n=== HOLIDAY MAKER ===");
     Console.WriteLine("1. Search available rooms");
     Console.WriteLine("2. Create a booking");
@@ -25,21 +27,43 @@ while (running)
     switch (input)
     {
         case "1":
-            // Query 1 Call
+        
         Console.WriteLine("\n--- Search available rooms ---");
         Console.Write("Enter city: ");
         string city = Console.ReadLine()!;
 
-        Console.Write("Ange antal personer: ");
+        Console.Write("How many customers: ");
         int guests = int.Parse(Console.ReadLine()!);
 
-        Console.Write("Ange incheckning (YYYY-MM-DD): ");
+        Console.Write("Enter chekin date (YYYY-MM-DD): ");
         string checkIn = Console.ReadLine()!;
 
-        Console.Write("Ange utcheckning (YYYY-MM-DD): ");
+        Console.Write("Enter checkout date (YYYY-MM-DD): ");
         string checkOut = Console.ReadLine()!;
 
-        await service.SearchAvailableRooms(city, guests, checkIn, checkOut);
+        if (!DateTime.TryParse(checkIn, out DateTime d1) || !DateTime.TryParse(checkOut, out DateTime d2) || d2 <= d1)
+        {
+            Console.WriteLine("Invalid dates! Check-out must be after check-in (YYYY-MM-DD).");
+            break;
+        }
+
+        Console.Write("Require Pool? (y/n, Enter to skip): ");
+        bool? requirePool = Console.ReadLine()?.ToLower() == "y" ? true : null;
+
+        Console.Write("Require Restaurant? (y/n, Enter to skip): ");
+        bool? requireRestaurant = Console.ReadLine()?.ToLower() == "y" ? true : null;
+
+        Console.Write("Max distance to beach in meters (Enter to skip): ");
+        int? maxBeach = int.TryParse(Console.ReadLine(), out int bDist) ? bDist : null;
+
+        Console.Write("Max distance to center in meters (Enter to skip): ");
+        int? maxCenter = int.TryParse(Console.ReadLine(), out int cDist) ? cDist : null;
+
+        Console.Write("Sort by (1 = Price, 2 = Rating): ");
+        string sortBy = Console.ReadLine() == "2" ? "rating" : "price";
+
+        await service.SearchAvailableRooms(city, guests, checkIn, checkOut, requirePool, requireRestaurant, maxBeach, maxCenter, sortBy);
+        
         break;
 
         case "2":
@@ -56,6 +80,12 @@ while (running)
 
         Console.Write("Enter Check-Out (YYYY-MM-DD): ");
         string cOut = Console.ReadLine()!;
+
+        if (!DateTime.TryParse(cIn, out DateTime dd1) || !DateTime.TryParse(cOut, out DateTime dd2) || dd2 <= dd1)
+        {
+            Console.WriteLine("Invalid dates! Check-out must be after check-in (YYYY-MM-DD).");
+            break;
+        }
 
         Console.Write("Enter Number of Guests: ");
         int gCount = int.Parse(Console.ReadLine()!);
@@ -138,7 +168,6 @@ while (running)
         }
         break;
 
-        
         case "0":
             running = false;
             Console.WriteLine("BYE");
@@ -147,4 +176,14 @@ while (running)
             Console.WriteLine("Invalid choice");
             break;
     }
+    }
+    catch (FormatException)
+    {
+        Console.WriteLine("Invalid input format! Please enter valid numbers and dates (YYYY-MM-DD).");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Something went wrong: {ex.Message}");
+    }
+
 }
