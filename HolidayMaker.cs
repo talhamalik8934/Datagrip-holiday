@@ -5,7 +5,11 @@ namespace HolidayMaker;
 public class HolidayMakerService
 {
     // Method for the first Query: Search Rooms.
-    public async Task SearchAvailableRooms(string city, int guests, string checkIn, string checkOut)
+    public async Task SearchAvailableRooms(string city, int guests, string checkIn, string checkOut,bool? requirePool = null,
+    bool? requireRestaurant = null,
+    int? maxBeachDistance = null,
+    int? maxCenterDistance = null,
+    string sortBy = "price")
     {
         await using var conn= await Database.GetConnectionAsync();
         
@@ -20,14 +24,46 @@ public class HolidayMakerService
         FROM bookings
         WHERE check_in < @checkOut
         AND check_out > @checkIn
-        )
-        ORDER BY price_per_night ASC;";
+        )";
 
         await using var prm= new MySqlCommand(sql,conn);
         prm.Parameters.AddWithValue("@city",city);
         prm.Parameters.AddWithValue("@guests",guests);
         prm.Parameters.AddWithValue("@checkOut",checkOut);
         prm.Parameters.AddWithValue("@checkIn",checkIn);
+
+        if (requirePool == true)
+        {
+            sql += " AND pool = TRUE";
+        }
+
+        if (requireRestaurant == true)
+        {
+            sql += " AND restaurant = TRUE";
+        }
+
+        if (maxBeachDistance.HasValue)
+        {
+            sql += " AND distance_beach <= @maxBeach";
+            prm.Parameters.AddWithValue("@maxBeach", maxBeachDistance.Value);
+        }
+
+        if (maxCenterDistance.HasValue)
+        {
+            sql += " AND distance_center <= @maxCenter";
+            prm.Parameters.AddWithValue("@maxCenter", maxCenterDistance.Value);
+        }
+
+        if (sortBy == "rating")
+        {
+            sql += " ORDER BY rating DESC, price_per_night ASC;";
+        }
+        else
+        {
+            sql += " ORDER BY price_per_night ASC;";
+        }
+
+        prm.CommandText = sql;
 
         
         await using var read= await prm.ExecuteReaderAsync();
@@ -37,13 +73,14 @@ public class HolidayMakerService
         while (await read.ReadAsync())
         {
             foundAny = true;
+            int roomId = read.GetInt32("room_id");
             string hotelName = read.GetString("hotel_name");
             string roomNum = read.GetString("room_number");
             int capacity = read.GetInt32("capacity");
             decimal price = read.GetDecimal("price_per_night");
             decimal rating = read.GetDecimal("rating");
 
-            Console.WriteLine($"Hotel: {hotelName} | Room: {roomNum} | Capacity: {capacity} | Price: {price} SEK/night | Rating: {rating}/5");
+            Console.WriteLine($"ID: {roomId} | Hotel: {hotelName} | Room: {roomNum} | Capacity: {capacity} | Price: {price} SEK/night | Rating: {rating}/5");
         }
 
         if (!foundAny)

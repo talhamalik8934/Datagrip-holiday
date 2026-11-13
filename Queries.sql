@@ -1,36 +1,38 @@
 -- Query 1: Search Rooms
 
+CREATE OR REPLACE VIEW v_available_room AS
 SELECT
     h.name AS hotel_name,
     h.city,
+    h.pool,
+    h.restaurant,
+    h.distance_beach,
+    h.distance_center,
+    h.rating,
     r.id AS room_id,
     r.room_number,
     r.capacity,
-    r.price_per_night,
-    h.rating
+    r.price_per_night
 FROM rooms r
-JOIN hotels h on r.hotel_id = h.id
-WHERE h.city = 'Malmö'
-  AND r.capacity >= 2
-  -- filter to not show
-  AND r.id NOT IN (
+JOIN hotels h ON r.hotel_id = h.id;
+
+SELECT *
+FROM v_available_room
+WHERE city = 'Malmö'
+  AND capacity >= 2
+  -- Optional filters:
+  AND pool = TRUE
+  AND restaurant = TRUE
+  AND distance_beach <= 500
+  AND distance_center <= 2500
+  -- Availability check:
+  AND room_id NOT IN (
       SELECT room_id
       FROM bookings
       WHERE check_in < '2026-12-15'
         AND check_out > '2026-12-10'
   )
-ORDER BY r.price_per_night ASC;
-
-CREATE VIEW v_available_room as SELECT
-    h.name AS hotel_name,
-    h.city,
-    r.id AS room_id,
-    r.room_number,
-    r.capacity,
-    r.price_per_night,
-    h.rating
-FROM rooms r
-JOIN hotels h on r.hotel_id = h.id;
+ORDER BY price_per_night ASC;
 
 -- Query 2: Create booking
 
